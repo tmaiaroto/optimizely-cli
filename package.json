@@ -27,10 +27,12 @@
     "ejs": "^1.0.0",
     "express": "^4.10.4",
     "glob": "^4.2.2",
+    "gulp": "^3.8.11",
     "lodash": "^2.4.1",
     "optimizely-node-client": "^0.1.0",
     "promptly": "^0.2.0",
-    "q": "^1.1.2"
+    "q": "^1.1.2",
+    "through": "^2.3.6"
   },
   "engines": {
     "node": "^0.10.32"
