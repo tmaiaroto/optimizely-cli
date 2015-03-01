@@ -47,6 +47,7 @@ program
 program
   .command("host <path> [port]")
   .option("-s --ssl", "SSL")
+  .option("-l --live", "Live Reload")
   .description("Host variation locally")
   .action(loadCommand("host"));
 
