@@ -12,8 +12,6 @@ The 'main' task, run by default, preforms a number of subtasks:
 
  - The 'variation.js' subtask works in much the same way as the 'global.js' task, but produces a variation level javascript file.
 
- - The 'experiment.json' and the 'variation.json' simply move their respective files to their respctive directories
-
 - All output files are minified
 
 - Each file is also processed as an ejs template. Locals include:
@@ -26,7 +24,7 @@ There is also a 'watch' task that watches the SOURCE directory runs the 'main' t
 
 Example - Running the main gulp task on this directory:
 
-lib/
+input/
   templates/
   strings.json/
   arbitrary1.js (es6)
@@ -47,7 +45,7 @@ lib/
 
 will result in this directory:
 
-experiment/
+output/
   global.js (es5)
   global.css (scss)
   var_1/
@@ -152,7 +150,7 @@ gulp.task('global.js', function(){
 
 //Global CSS
 gulp.task('global.css', function(){
-  return gulp.src('lib/global.scss')
+  return gulp.src(path.join(SOURCE, 'global.scss'))
   .pipe(plumber())
   .pipe(through.map(ejsTemplate))//EJS
   .pipe(sass())//SCSS
