@@ -4,7 +4,8 @@
   var connect = function(){
       if(ws) return;
       console.log("socket connecting...");
-      ws = new WebSocket('ws'+(window.location.protocol === 'https'? 's': "")  +'://localhost:<%= _port %>/');
+
+      ws = new WebSocket('<%= _protocol %>://localhost:<%= _port %>/');
       ws.onopen = function() {
         console.log("socket connected.");
         //window.location.reload();
