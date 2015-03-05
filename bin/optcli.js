@@ -48,6 +48,7 @@ program
   .command("host <path> [port]")
   .option("-s --ssl", "SSL")
   .option("-l --live", "Live Reload")
+  .option("-t --task [task]", "Run Task")
   .description("Host variation locally")
   .action(loadCommand("host"));
 
