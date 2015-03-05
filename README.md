@@ -46,6 +46,17 @@ optcli host [options] <path> [port]
 ```
 Host a variation locally. Point your browser at http(s)://localhost:8080 (default port) for usage info.
 
+You may pass a number of options to host.
+ - -__s, -ssl__ -- host variation over https
+ - -__l, --live__ -- reload hosted site upon file change
+ - -__t, --task [runner]:[task]__ -- run a task runner before hosting.
+
+   - If no task runner is specified (brocoli, grunt, or gulp), optcli will determine what to run based on the existence of a brocolifile, a gruntfile, or a gulpfile.
+
+   - If no task is specified, the optcli will run the default task specified in the task file.
+
+
+
 ```
 optcli push-experiment <path>
 ```
