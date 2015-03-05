@@ -1,0 +1,23 @@
+{
+  "name": "",
+  "version": "0.0.0",
+  "description": "",
+  "author": "Funnel Envy",
+  "keywords": [
+    "scss",
+    "es6",
+    "concatinate"
+  ],
+  "dependencies": {
+    "ejs": "^2.3.1",
+    "gulp": "^3.8.11",
+    "gulp-babel": "^4.0.0",
+    "gulp-concat": "^2.5.2",
+    "gulp-plumber": "^0.6.6",
+    "gulp-rename": "^1.2.0",
+    "gulp-sass": "^1.3.3",
+    "gulp-through": "^0.3.0",
+    "merge-stream": "^0.1.7",
+    "through-gulp": "^0.3.8",
+  }
+}
