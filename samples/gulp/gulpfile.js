@@ -2,7 +2,7 @@
 //Usage
 ////////////////
 /**
-This gulp file is intended for use by with optcli.
+This gulp file is intended for use with with optcli.
 
 The 'main' task, run by default, preforms a number of subtasks:
 
@@ -12,12 +12,12 @@ The 'main' task, run by default, preforms a number of subtasks:
 
  - The 'variation.js' subtask works in much the same way as the 'global.js' task, but produces a variation level javascript file.
 
-- All output files are minified
-
 - Each file is also processed as an ejs template. Locals include:
    - A 'templates' object created from files within a 'templates' directory.
       keys are the file names and values are the contents
    - A 'strings' object imported from an 'strings.json' file.
+   - A 'hasher' function to help ensure unique strings and prevent naming
+      collisions (css classes, ids etc.)
 Besure to properly decode/unescape strings broungt into your code through the templating feature.
 
 There is also a 'watch' task that watches the SOURCE directory runs the 'main' task should anything change.
@@ -26,7 +26,7 @@ Example - Running the main gulp task on this directory:
 
 input/
   templates/
-  strings.json/
+  strings.json
   arbitrary1.js (es6)
   arbitrary2.js (es6)
   ...
@@ -53,16 +53,53 @@ output/
   var_2/
     variation.js (es5)
 
-Note: The accompaning package.json file is not necessary, but having it around will allow you to install all dependancies with a simple 'npm install'.
+Also, I've set up my working directory like so:
+
+<project>/
+  .optcli/
+    token
+  project.json
+  <experiment>/
+    gulpfile.js
+    package.json (for gulpfile)
+    node_modules (for gulpfile)
+    input/ (see above)
+    output/ (see above)
+
+Some Notes:
+
+  Your working directory is assumed to be a project director as above.
+
+  Create your experiment with:
+  'optcli experiment <experiment>/DEST <description> <url>'
+
+  Create your variations with:
+  'optcli variation <experiment>/DEST <variaition> <description>'
+
+  Optcli will handle the various json files when pushing, so you won't need to touch the '<experiment>/DEST' directory anymore.
+
+  Host a specific variation with
+  'optcli host -lt :watch <experiment>/DEST/<variation>'
+  or
+  'optcli host -slt :watch <experiment>/DEST/<variation>' (ssl)
+  You can also user the longer versions, which, honestly isn't much longer
+  'optcli host --live --task=gulp:watch <experiment>/DEST/<variation>'
+  'optcli host --ssl --live --task=gulp:watch <experiment>/DEST/<variation>'
+
+  Modify the input directory
+
+  The accompaning package.json file is not necessary.
+  but having it around will allow you to install all gulpfile dependancies with a simple 'npm install'.
 .
 */
 
 
 ////////////////
-//Constants
+//Config
 ////////////////
-var SOURCE = 'input';
-var DEST = 'output';
+var SOURCE = 'input'; //The source folder
+var DEST = 'output'; //The destination
+var HASHPREFIX = 'ab64-'; //The prefix for the hasher.
 
 ////////////////
 //Dependencies
@@ -77,6 +114,7 @@ var Buffer = require('buffer').Buffer;
 var gulp = require('gulp');
 var merge = require('merge-stream');
 var ejs = require('ejs');
+var crypto = require('crypto');
 
 //Gulp Plugins
 var babel = require('gulp-babel');//Compile ES6
@@ -99,18 +137,15 @@ var getFolders = function getFolders(dir) {
     });
 };
 
-var defaultGetTemplates = function(directory){
-  var templates = {};
-  var templatesDir = path.resolve(directory, "templates");
-  if(fs.existsSync(templatesDir)){
-    fs.readdirSync(templatesDir).forEach(function(file) {
-      var text = fs.readFileSync(path.resolve(templatesDir,file),
-        'utf-8').replace(/(?:\r\n|\r|\n)/g, '\n');
-        templates[file] = escape(text);
-    });
-  }
-  return templates;
+var hasher = function(str){
+  return HASHPREFIX + crypto
+    .createHash('sha1')
+      .update(HASHPREFIX)
+      .update(str)
+        .digest('hex').substr(0,10);
+  return Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
 };
+
 var defaultGetStrings = function(directory){
   var strings = {};
   var stringsFile = path.resolve(directory, "strings.json");
@@ -118,28 +153,53 @@ var defaultGetStrings = function(directory){
     strings = JSON.parse(fs.readFileSync(stringsFile));
   }
   return strings;
-}
+};
+
+var ejsStrings = function(data){
+  var locals =    {
+       strings : defaultGetStrings(SOURCE),
+       hasher : hasher
+     };
+  return ejs.render(data, locals);
+};
+var defaultGetTemplates = function(directory){
+  var templates = {};
+  var templatesDir = path.resolve(directory, "templates");
+  if(fs.existsSync(templatesDir)){
+    fs.readdirSync(templatesDir).forEach(function(file) {
+      var text = fs.readFileSync(path.resolve(templatesDir,file),
+        'utf-8').replace(/(?:\r\n|\r|\n)/g, '\n');
+        templates[file] = escape(ejsStrings(text));
+    });
+  }
+  return templates;
+};
 
 var ejsTemplate = function(data){
   var contents = data.contents.toString('utf8');
   var locals =    {
        templates : defaultGetTemplates(SOURCE),
-       strings : defaultGetStrings(SOURCE)
+       strings : defaultGetStrings(SOURCE),
+       hasher : hasher
      };
   contents = ejs.render(contents.toString('utf8'), locals);
   data.contents = new Buffer(contents);
   return data;
-}
+};
 
 ////////////////
-//Tasks
+//Utilities Tasks
 ////////////////
+var count = 0;
+gulp.task('utility.count',function(){
+  console.log('count: %s', ++count)
+});
 
 //Global JS
 gulp.task('global.js', function(){
   return gulp.src([
     path.join(SOURCE,'!(global)*.js'),
-    path.join(SOURCE, 'global.js')
+    path.join(SOURCE, 'global.js')//Add global.js last
   ])
   .pipe(plumber())
   .pipe(concat('global.js'))//Concatenate
@@ -156,7 +216,7 @@ gulp.task('global.css', function(){
   .pipe(sass())//SCSS
   .pipe(rename('global.css'))//Rename
   .pipe(gulp.dest(DEST));
-})
+});
 
 //Variation JS
 gulp.task('variation.js', function(){
@@ -164,7 +224,7 @@ gulp.task('variation.js', function(){
   var tasks = folders.map(function(dir) {
      return gulp.src([
          path.join(SOURCE, dir, '!(variation)*.js'),
-         path.join(SOURCE, dir, 'variation.js')
+         path.join(SOURCE, dir, 'variation.js')//Add variation.js last
        ])
        .pipe(plumber())
        .pipe(concat('variation.js'))//Concatenate
@@ -177,11 +237,11 @@ gulp.task('variation.js', function(){
 
 //Main
 gulp.task('main',
-['global.js', 'global.css','variation.js'])
+['global.js', 'global.css','variation.js', 'utility.count'])
 
 //Watch
 gulp.task('watch',['main'],function(){
-  gulp.watch(path.join(SOURCE,"**/*.*"), ['main']);
+  gulp.watch(path.join(SOURCE, "**/*.*"), ['main']);
 });
 
 //Default
